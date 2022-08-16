@@ -138,7 +138,7 @@ def plot_decision_boundary(w, b, X, y):
         # Plot z = 0.5
         plt.contour(u,v,z, levels = [0.5], colors="g")
 
-plot_decision_boundary(w, b, X_train, y_train)
+
 
 def gradient_descent(X, y, w_in, b_in, cost_function, gradient_function, alpha, num_iters, lambda_): 
     
@@ -182,7 +182,7 @@ alpha = 0.001
 w,b, J_history,_ = gradient_descent(X_train ,y_train, initial_w, initial_b, 
                                   compute_cost, compute_gradient, alpha, iterations, 0)
 
-
+plot_decision_boundary(w, b, X_train, y_train)
 
 def predict(X, w, b): 
     # number of training examples
