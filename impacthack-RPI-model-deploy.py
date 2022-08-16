@@ -1,9 +1,20 @@
+#Code for Impact Hack Using Raspberry Pi, DHT Sensor, Moinsture Sensor and Machine Learning Principles
 import numpy as np
 import matplotlib.pyplot as plt
 import copy
 import math
+import time
+import board
+import adafruit_dht
 
-%matplotlib inline
+
+# Initial the dht device, with data pin connected to:
+dhtDevice = adafruit_dht.DHT11(board.D4)
+
+# you can pass DHT22 use_pulseio=False if you wouldn't like to use pulseio.
+# This may be necessary on a Linux single board computer like the Raspberry Pi,
+# but it will not work in CircuitPython.
+dhtDevice = adafruit_dht.DHT11(board.D4, use_pulseio=False)
 
 def load_data(filename):
     data = np.loadtxt(filename, delimiter=',')
@@ -13,6 +24,16 @@ def load_data(filename):
 
 # load dataset
 X_train, y_train = load_data("impacthack.csv")
+
+print("First five elements in X_train are:\n", X_train[:5])
+print("Type of X_train:",type(X_train))
+
+print("First five elements in y_train are:\n", y_train[:5])
+print("Type of y_train:",type(y_train))
+
+print ('The shape of X_train is: ' + str(X_train.shape))
+print ('The shape of y_train is: ' + str(y_train.shape))
+print ('We have m = %d training examples' % (len(y_train)))
 
 def plot_data(X, y, pos_label="y=1", neg_label="y=0", ):
     maize = y == 1
@@ -128,7 +149,7 @@ def plot_decision_boundary(w, b, X, y):
         # Plot z = 0.5
         plt.contour(u,v,z, levels = [0.5], colors="g")
 
-plot_decision_boundary(w, b, X_train, y_train)
+
 
 def gradient_descent(X, y, w_in, b_in, cost_function, gradient_function, alpha, num_iters, lambda_): 
     
@@ -172,7 +193,7 @@ alpha = 0.001
 w,b, J_history,_ = gradient_descent(X_train ,y_train, initial_w, initial_b, 
                                   compute_cost, compute_gradient, alpha, iterations, 0)
 
-
+plot_decision_boundary(w, b, X_train, y_train)
 
 def predict(X, w, b): 
     # number of training examples
@@ -199,11 +220,36 @@ def predict(X, w, b):
         
     return p
 
-# Test your predict code
-np.random.seed(1)
-tmp_w = np.random.randn(2)
-tmp_b = 0.0    
-tmp_X = np.array([[18.3, 10.1], [13.6, 45.7]])
-print(tmp_X)
-tmp_p = predict(tmp_X, tmp_w, tmp_b)
-print(f'Output of predict: shape {tmp_p.shape}, value {tmp_p}')
+
+
+
+while True:
+    try:
+        # Print the values to the serial port
+        temperature_c = dhtDevice.temperature
+        temperature_f = temperature_c * (9 / 5) + 32
+        humidity = dhtDevice.humidity
+        print(
+            "Temp: {:.1f} F / {:.1f} C    Humidity: {}% ".format(
+                temperature_f, temperature_c, humidity
+            )
+        )
+        # Test your predict code
+        np.random.seed(1)
+        tmp_w = np.random.randn(2)
+        tmp_b = 0.0    
+        tmp_X = np.array([[temperature_c, humidity]])
+        print(tmp_X)
+        tmp_p = predict(tmp_X, tmp_w, tmp_b)
+        print(f'Crop Predicion: shape {tmp_p.shape}, value {tmp_p}')
+
+    except RuntimeError as error:
+        # Errors happen fairly often, DHT's are hard to read, just keep going
+        print(error.args[0])
+        time.sleep(2.0)
+        continue
+    except Exception as error:
+        dhtDevice.exit()
+        raise error
+
+    time.sleep(2.0)
